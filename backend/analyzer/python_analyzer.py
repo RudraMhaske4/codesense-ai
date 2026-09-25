@@ -17,6 +17,7 @@ class PythonAnalyzer:
                 )
             ):
                 complexity += 1
+            # Boolean conditions
             elif isinstance(node, ast.BoolOp):
                 complexity += len(node.values) - 1
         return complexity
@@ -31,17 +32,37 @@ class PythonAnalyzer:
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 complexity = self.calculate_complexity(node)
+                function_length = (
+                    node.end_lineno - node.lineno + 1
+                )
+                argument_count = len(node.args.args)
+                if (
+                    node.args.args
+                    and node.args.args[0].arg == "self"
+                ):
+                    argument_count -= 1
                 functions.append({
                     "name": node.name,
-                    "arguments": len(node.args.args),
-                    "complexity": complexity
+                    "arguments": argument_count,
+                    "complexity": complexity,
+                    "length": function_length
                 })
             elif isinstance(node, ast.AsyncFunctionDef):
                 complexity = self.calculate_complexity(node)
+                function_length = (
+                    node.end_lineno - node.lineno + 1
+                )
+                argument_count = len(node.args.args)
+                if (
+                    node.args.args
+                    and node.args.args[0].arg == "self"
+                ):
+                    argument_count -= 1
                 functions.append({
                     "name": node.name,
-                    "arguments": len(node.args.args),
-                    "complexity": complexity
+                    "arguments": argument_count,
+                    "complexity": complexity,
+                    "length": function_length
                 })
             elif isinstance(node, ast.ClassDef):
                 classes.append(node.name)
