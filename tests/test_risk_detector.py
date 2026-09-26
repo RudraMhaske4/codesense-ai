@@ -18,7 +18,7 @@ class TestRiskDetector(unittest.TestCase):
         detector = RiskDetector(scan_results)
         risks = detector.analyze()
         self.assertEqual(len(risks), 1)
-        self.assertEqual(risks[0]["risk"], "High")
+        self.assertEqual(risks[0]["severity"], "High")
         self.assertIn(
             "High cyclomatic complexity",
             risks[0]["reasons"]
@@ -99,7 +99,7 @@ class TestRiskDetector(unittest.TestCase):
         detector = RiskDetector(scan_results)
         risks = detector.analyze()
         self.assertEqual(len(risks), 1)
-        self.assertEqual(risks[0]["risk"], "High")
+        self.assertEqual(risks[0]["severity"], "High")
         self.assertEqual(len(risks[0]["reasons"]), 3)
 if __name__ == "__main__":
     unittest.main()
