@@ -3,6 +3,7 @@ from pathlib import Path
 from backend.analyzer.repository_scanner import RepositoryScanner
 from backend.analyzer.repository_metrics import RepositoryMetrics
 from backend.analyzer.risk_detector import RiskDetector
+from backend.analyzer.quality_scorer import QualityScorer
 app = FastAPI(
     title="CodeSense AI",
     description="AI-powered developer intelligence platform",
@@ -35,37 +36,48 @@ def analyze_repository():
         "summary": summary,
         "files": scan_results
     }
-
 @app.get("/risk-summary")
 def risk_summary():
     repository_path = Path("data/test_repository")
-
     if not repository_path.exists():
         raise HTTPException(
             status_code=404,
             detail="Test repository not found"
         )
-
     scanner = RepositoryScanner(repository_path)
     scan_results = scanner.scan()
-
     detector = RiskDetector(scan_results)
     risks = detector.analyze()
-
     high_risks = [
         risk for risk in risks
         if risk["severity"] == "High"
     ]
-
     medium_risks = [
         risk for risk in risks
         if risk["severity"] == "Medium"
     ]
-
     return {
         "repository": str(repository_path),
         "total_risks": len(risks),
         "high_risks": len(high_risks),
         "medium_risks": len(medium_risks),
         "risk_details": risks
+    }
+@app.get("/quality-score")
+def quality_score():
+    repository_path = Path("data/test_repository")
+    if not repository_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Test repository not found"
+        )
+    scanner = RepositoryScanner(repository_path)
+    scan_results = scanner.scan()
+    detector = RiskDetector(scan_results)
+    risks = detector.analyze()
+    scorer = QualityScorer(risks)
+    result = scorer.calculate()
+    return {
+        "repository": str(repository_path),
+        **result
     }
