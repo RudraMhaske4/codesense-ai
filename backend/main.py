@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException
 from pathlib import Path
+from fastapi import FastAPI, HTTPException
 from backend.analyzer.repository_scanner import RepositoryScanner
 from backend.analyzer.repository_metrics import RepositoryMetrics
 from backend.analyzer.risk_detector import RiskDetector
@@ -80,4 +80,39 @@ def quality_score():
     return {
         "repository": str(repository_path),
         **result
+    }
+
+@app.get("/repository-report")
+def repository_report():
+    repository_path = Path("data/test_repository")
+
+    if not repository_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Test repository not found"
+        )
+    scanner = RepositoryScanner(repository_path)
+    scan_results = scanner.scan()
+    metrics_calculator = RepositoryMetrics(scan_results)
+    metrics = metrics_calculator.calculate()
+    detector = RiskDetector(scan_results)
+    risks = detector.analyze()
+    scorer = QualityScorer(risks)
+    quality = scorer.calculate()
+    return {
+        "repository": str(repository_path),
+        "summary": {
+            "files_analyzed": metrics["files_analyzed"],
+            "total_lines_of_code": metrics["total_lines_of_code"],
+            "total_functions": metrics["total_functions"],
+            "total_classes": metrics["total_classes"]
+        },
+        "code_metrics": metrics,
+        "risk_summary": {
+            "total_risks": len(risks),
+            "high_risks": quality["high_risks"],
+            "medium_risks": quality["medium_risks"]
+        },
+        "quality": quality,
+        "risk_details": risks
     }
