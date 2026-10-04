@@ -185,6 +185,35 @@ st.markdown(
         border-radius: 8px;
         padding: 14px;
         color: #cbd5e1;
+        margin-bottom: 8px;
+    }
+
+    .file-header {
+        background: #252a32;
+        border: 1px solid #363d49;
+        border-radius: 12px;
+        padding: 22px;
+        margin-bottom: 20px;
+    }
+
+    .file-name {
+        color: #f5f7fa;
+        font-size: 25px;
+        font-weight: 750;
+    }
+
+    .file-description {
+        color: #8f98a6;
+        margin-top: 5px;
+    }
+
+    .empty-card {
+        background: #252a32;
+        border: 1px solid #363d49;
+        border-radius: 12px;
+        padding: 35px;
+        text-align: center;
+        color: #9ba4b2;
     }
 
     div.stButton > button {
@@ -282,6 +311,7 @@ page = st.sidebar.radio(
     [
         "Insights",
         "Risk Analysis",
+        "File Explorer",
         "Code Metrics",
         "Repository Report",
         "About"
@@ -293,11 +323,14 @@ st.sidebar.divider()
 health_check, health_error = get_api_data("health")
 
 if health_error:
+
     st.sidebar.markdown(
         '<span class="status-offline">● Backend Offline</span>',
         unsafe_allow_html=True
     )
+
 else:
+
     st.sidebar.markdown(
         '<span class="status-online">● Backend Online</span>',
         unsafe_allow_html=True
@@ -396,13 +429,10 @@ if page == "Insights":
     )
 
 
-    # --------------------------------------------------------
-    # TOP METRICS
-    # --------------------------------------------------------
-
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
+
         metric_card(
             "Files analyzed",
             summary.get(
@@ -413,6 +443,7 @@ if page == "Insights":
         )
 
     with c2:
+
         metric_card(
             "Quality score",
             f"{score}/100",
@@ -420,6 +451,7 @@ if page == "Insights":
         )
 
     with c3:
+
         metric_card(
             "Total risks",
             risk_summary.get(
@@ -430,6 +462,7 @@ if page == "Insights":
         )
 
     with c4:
+
         metric_card(
             "Functions",
             summary.get(
@@ -442,10 +475,6 @@ if page == "Insights":
 
     st.write("")
 
-
-    # --------------------------------------------------------
-    # CHARTS
-    # --------------------------------------------------------
 
     left, right = st.columns(2)
 
@@ -573,10 +602,6 @@ if page == "Insights":
         )
 
 
-    # --------------------------------------------------------
-    # HEALTH
-    # --------------------------------------------------------
-
     st.subheader("Repository Health")
 
     health_col1, health_col2 = st.columns(
@@ -610,10 +635,6 @@ if page == "Insights":
             unsafe_allow_html=True
         )
 
-
-    # --------------------------------------------------------
-    # SUMMARY
-    # --------------------------------------------------------
 
     st.subheader("Repository Summary")
 
@@ -689,13 +710,10 @@ elif page == "Risk Analysis":
         )
 
 
-        # ----------------------------------------------------
-        # RISK METRICS
-        # ----------------------------------------------------
-
         c1, c2, c3 = st.columns(3)
 
         with c1:
+
             metric_card(
                 "Total issues",
                 total,
@@ -703,6 +721,7 @@ elif page == "Risk Analysis":
             )
 
         with c2:
+
             metric_card(
                 "High severity",
                 high,
@@ -710,6 +729,7 @@ elif page == "Risk Analysis":
             )
 
         with c3:
+
             metric_card(
                 "Medium severity",
                 medium,
@@ -720,14 +740,11 @@ elif page == "Risk Analysis":
         st.write("")
 
 
-        # ----------------------------------------------------
-        # FILTER
-        # ----------------------------------------------------
-
         details = risks.get(
             "risk_details",
             []
         )
+
 
         if details:
 
@@ -765,10 +782,6 @@ elif page == "Risk Analysis":
                 f"issue(s)"
             )
 
-
-            # ------------------------------------------------
-            # ISSUE CARDS
-            # ------------------------------------------------
 
             for index, risk in enumerate(
                 filtered_details,
@@ -823,10 +836,6 @@ elif page == "Risk Analysis":
                 )
 
 
-                # --------------------------------------------
-                # ISSUE HEADER
-                # --------------------------------------------
-
                 st.markdown(
                     f"""
                     <div class="issue-card {card_class}">
@@ -848,10 +857,6 @@ elif page == "Risk Analysis":
                     unsafe_allow_html=True
                 )
 
-
-                # --------------------------------------------
-                # STATS
-                # --------------------------------------------
 
                 s1, s2, s3 = st.columns(3)
 
@@ -906,10 +911,6 @@ elif page == "Risk Analysis":
 
                 st.write("")
 
-
-                # --------------------------------------------
-                # REASON + RECOMMENDATION
-                # --------------------------------------------
 
                 detail_left, detail_right = st.columns(2)
 
@@ -973,12 +974,378 @@ elif page == "Risk Analysis":
 
 
 # ============================================================
+# FILE EXPLORER
+# ============================================================
+
+elif page == "File Explorer":
+
+    st.header("Repository File Explorer")
+
+    st.caption(
+        "Explore files containing detected code-quality issues."
+    )
+
+
+    if risks_error:
+
+        st.error(
+            f"Could not load repository risks: "
+            f"{risks_error}"
+        )
+
+    else:
+
+        details = risks.get(
+            "risk_details",
+            []
+        )
+
+
+        # ----------------------------------------------------
+        # BUILD FILE LIST
+        # ----------------------------------------------------
+
+        files = sorted(
+            list(
+                {
+                    risk.get(
+                        "file",
+                        "Unknown"
+                    )
+                    for risk in details
+                    if risk.get("file")
+                }
+            )
+        )
+
+
+        if not files:
+
+            st.markdown(
+                """
+                <div class="empty-card">
+
+                    <div style="font-size:40px;">
+                        📁
+                    </div>
+
+                    <h3>
+                        No files with detected issues
+                    </h3>
+
+                    <p>
+                        Your analyzer did not return
+                        any file-level risks.
+                    </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            # ------------------------------------------------
+            # FILE SELECTOR
+            # ------------------------------------------------
+
+            selected_file = st.selectbox(
+                "Select a file",
+                files
+            )
+
+
+            # ------------------------------------------------
+            # FILTER RISKS FOR SELECTED FILE
+            # ------------------------------------------------
+
+            file_risks = [
+                risk
+                for risk in details
+                if risk.get("file") == selected_file
+            ]
+
+
+            high_count = sum(
+                1
+                for risk in file_risks
+                if str(
+                    risk.get(
+                        "severity",
+                        ""
+                    )
+                ).lower() == "high"
+            )
+
+
+            medium_count = sum(
+                1
+                for risk in file_risks
+                if str(
+                    risk.get(
+                        "severity",
+                        ""
+                    )
+                ).lower() == "medium"
+            )
+
+
+            # ------------------------------------------------
+            # FILE HEADER
+            # ------------------------------------------------
+
+            st.markdown(
+                f"""
+                <div class="file-header">
+
+                    <div class="file-name">
+                        📄 {selected_file}
+                    </div>
+
+                    <div class="file-description">
+                        Static analysis results for this file
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            # ------------------------------------------------
+            # FILE METRICS
+            # ------------------------------------------------
+
+            c1, c2, c3 = st.columns(3)
+
+
+            with c1:
+
+                metric_card(
+                    "Issues",
+                    len(file_risks),
+                    "Detected in file"
+                )
+
+
+            with c2:
+
+                metric_card(
+                    "High severity",
+                    high_count,
+                    "Requires attention"
+                )
+
+
+            with c3:
+
+                metric_card(
+                    "Medium severity",
+                    medium_count,
+                    "Recommended review"
+                )
+
+
+            st.write("")
+
+
+            # ------------------------------------------------
+            # ISSUE LIST
+            # ------------------------------------------------
+
+            st.subheader(
+                "Issues in this file"
+            )
+
+
+            for index, risk in enumerate(
+                file_risks,
+                start=1
+            ):
+
+                severity = risk.get(
+                    "severity",
+                    "Unknown"
+                )
+
+                function = risk.get(
+                    "function",
+                    "Unknown"
+                )
+
+                complexity = risk.get(
+                    "complexity",
+                    "—"
+                )
+
+                length = risk.get(
+                    "length",
+                    "—"
+                )
+
+                arguments = risk.get(
+                    "arguments",
+                    "—"
+                )
+
+                reasons = risk.get(
+                    "reasons",
+                    []
+                )
+
+                recommendations = risk.get(
+                    "recommendations",
+                    []
+                )
+
+
+                card_class, severity_class_name = (
+                    severity_class(
+                        severity
+                    )
+                )
+
+
+                st.markdown(
+                    f"""
+                    <div class="issue-card {card_class}">
+
+                        <div class="{severity_class_name}">
+                            ● {str(severity).upper()}
+                        </div>
+
+                        <div class="issue-function">
+                            {function}
+                        </div>
+
+                        <div class="issue-file">
+                            Issue #{index}
+                        </div>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
+                s1, s2, s3 = st.columns(3)
+
+
+                with s1:
+
+                    st.markdown(
+                        f"""
+                        <div class="issue-stat">
+                            <div class="issue-stat-value">
+                                {complexity}
+                            </div>
+                            <div class="issue-stat-label">
+                                COMPLEXITY
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+
+                with s2:
+
+                    st.markdown(
+                        f"""
+                        <div class="issue-stat">
+                            <div class="issue-stat-value">
+                                {length}
+                            </div>
+                            <div class="issue-stat-label">
+                                FUNCTION LENGTH
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+
+                with s3:
+
+                    st.markdown(
+                        f"""
+                        <div class="issue-stat">
+                            <div class="issue-stat-value">
+                                {arguments}
+                            </div>
+                            <div class="issue-stat-label">
+                                ARGUMENTS
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+
+                st.write("")
+
+
+                left, right = st.columns(2)
+
+
+                with left:
+
+                    st.markdown(
+                        "### Detection reason"
+                    )
+
+                    if reasons:
+
+                        for reason in reasons:
+
+                            st.markdown(
+                                f"• {reason}"
+                            )
+
+                    else:
+
+                        st.write(
+                            "No reason provided."
+                        )
+
+
+                with right:
+
+                    st.markdown(
+                        "### Recommendation"
+                    )
+
+                    if recommendations:
+
+                        for recommendation in recommendations:
+
+                            st.markdown(
+                                f"""
+                                <div class="recommendation">
+                                    💡 {recommendation}
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+
+                    else:
+
+                        st.info(
+                            "No recommendation available."
+                        )
+
+
+                st.divider()
+
+
+# ============================================================
 # CODE METRICS
 # ============================================================
 
 elif page == "Code Metrics":
 
     st.header("Code Metrics")
+
 
     if report_error:
 
@@ -997,6 +1364,7 @@ elif page == "Code Metrics":
 
         c1, c2, c3 = st.columns(3)
 
+
         with c1:
 
             metric_card(
@@ -1008,6 +1376,7 @@ elif page == "Code Metrics":
                 "Across functions"
             )
 
+
         with c2:
 
             metric_card(
@@ -1018,6 +1387,7 @@ elif page == "Code Metrics":
                 ),
                 "Highest detected"
             )
+
 
         with c3:
 
@@ -1036,6 +1406,7 @@ elif page == "Code Metrics":
 
         c4, c5, c6 = st.columns(3)
 
+
         with c4:
 
             metric_card(
@@ -1047,6 +1418,7 @@ elif page == "Code Metrics":
                 "Lines"
             )
 
+
         with c5:
 
             metric_card(
@@ -1057,6 +1429,7 @@ elif page == "Code Metrics":
                 ),
                 "Per function"
             )
+
 
         with c6:
 
@@ -1125,6 +1498,7 @@ elif page == "Repository Report":
 
         c1, c2, c3, c4 = st.columns(4)
 
+
         with c1:
 
             metric_card(
@@ -1134,6 +1508,7 @@ elif page == "Repository Report":
                     0
                 )
             )
+
 
         with c2:
 
@@ -1148,6 +1523,7 @@ elif page == "Repository Report":
                 )
             )
 
+
         with c3:
 
             metric_card(
@@ -1157,6 +1533,7 @@ elif page == "Repository Report":
                     0
                 )
             )
+
 
         with c4:
 
@@ -1202,6 +1579,7 @@ elif page == "About":
         - Code quality scoring
         - Automated recommendations
         - Repository-level reporting
+        - File-level issue exploration
 
         ### Technology Stack
 
@@ -1217,7 +1595,7 @@ elif page == "About":
         ### Architecture
 
         **Streamlit Dashboard**
-        
+
         ↓
 
         **FastAPI Backend**
