@@ -15,3 +15,4 @@ CodeSense AI is an AI-powered developer intelligence platform designed to analyz
 - Function argument analysis
 - Repository-level metrics
 - FastAPI backend
+
